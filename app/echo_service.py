@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import os
+import subprocess
 import sys
 import tempfile
 import threading
@@ -248,6 +249,13 @@ class EchoTTSService:
             pcm16 = (mono * 32767.0).to(torch.int16).contiguous().cpu().numpy().tobytes()
             return pcm16, normalized_format, MEDIA_TYPE_BY_FORMAT[normalized_format]
 
+        if normalized_format == "ogg":
+            return (
+                self._save_ogg_opus_bytes(audio_tensor),
+                normalized_format,
+                MEDIA_TYPE_BY_FORMAT[normalized_format],
+            )
+
         output_path = self._write_temp_file(b"", suffix=f".{normalized_format}")
         try:
             if normalized_format == "mp3":
@@ -274,6 +282,57 @@ class EchoTTSService:
             )
         finally:
             output_path.unlink(missing_ok=True)
+
+    def _save_ogg_opus_bytes(self, audio_tensor: torch.Tensor) -> bytes:
+        wav_path = self._write_temp_file(b"", suffix=".wav")
+        ogg_path = self._write_temp_file(b"", suffix=".ogg")
+        try:
+            # Encode to PCM WAV first, then transcode with ffmpeg/libopus for Telegram compatibility.
+            torchaudio.save(str(wav_path), audio_tensor, self.sample_rate, format="wav")
+
+            cmd = [
+                "ffmpeg",
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                str(wav_path),
+                "-ac",
+                "1",
+                "-ar",
+                "48000",
+                "-c:a",
+                "libopus",
+                "-b:a",
+                "48k",
+                "-vbr",
+                "on",
+                "-application",
+                "voip",
+                str(ogg_path),
+            ]
+
+            try:
+                proc = subprocess.run(
+                    cmd,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+            except FileNotFoundError as exc:
+                raise ValueError(
+                    "ffmpeg is required for OGG Opus output but was not found in PATH."
+                ) from exc
+
+            if proc.returncode != 0:
+                detail = proc.stderr.strip() or proc.stdout.strip() or "unknown ffmpeg error"
+                raise ValueError(f"Failed to encode OGG Opus audio: {detail}")
+
+            return ogg_path.read_bytes()
+        finally:
+            wav_path.unlink(missing_ok=True)
+            ogg_path.unlink(missing_ok=True)
 
     def _normalize_output_format(self, output_format: str) -> str:
         fmt = (output_format or "wav").strip().lower()
