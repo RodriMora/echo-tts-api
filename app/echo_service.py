@@ -22,6 +22,7 @@ MEDIA_TYPE_BY_FORMAT = {
     "wav": "audio/wav",
     "mp3": "audio/mpeg",
     "flac": "audio/flac",
+    "ogg": "audio/ogg",
     "pcm": "audio/pcm",
 }
 
@@ -276,11 +277,11 @@ class EchoTTSService:
 
     def _normalize_output_format(self, output_format: str) -> str:
         fmt = (output_format or "wav").strip().lower()
-        if fmt in {"wav", "mp3", "flac"}:
+        if fmt in {"wav", "mp3", "flac", "ogg"}:
             return fmt
         if fmt in {"pcm", "pcm16"}:
             return "pcm"
-        raise ValueError("Unsupported output format. Use one of: wav, mp3, flac, pcm")
+        raise ValueError("Unsupported output format. Use one of: wav, mp3, flac, ogg, pcm")
 
     def _list_voice_files(self) -> list[Path]:
         paths: list[Path] = []

@@ -54,16 +54,18 @@ def _normalize_elevenlabs_format(output_format: str | None) -> str:
         return "mp3"
 
     value = output_format.strip().lower()
-    if value in {"mp3", "wav", "flac", "pcm", "pcm16"}:
+    if value in {"mp3", "wav", "flac", "ogg", "pcm", "pcm16"}:
         return value
 
     if value.startswith("mp3_"):
         return "mp3"
+    if value.startswith("ogg_"):
+        return "ogg"
     if value.startswith("pcm_"):
         return "pcm"
 
     raise ValueError(
-        "Unsupported ElevenLabs output_format. Examples: mp3_44100_128, pcm_44100, wav"
+        "Unsupported ElevenLabs output_format. Examples: mp3_44100_128, ogg_44100_128, pcm_44100, wav"
     )
 
 

@@ -54,7 +54,7 @@ Model weights are loaded during startup.
 - `POST /v1/text-to-speech/{voice_id}`
 - `POST /v1/text-to-speech/{voice_id}/stream`
   - Accepts ElevenLabs-like JSON fields (`text`, `model_id`, `output_format`, `seed`, `voice_settings`)
-  - `output_format` supported: `mp3_...`, `pcm_...`, `mp3`, `wav`, `flac`
+  - `output_format` supported: `mp3_...`, `ogg_...`, `pcm_...`, `mp3`, `wav`, `flac`, `ogg`
 
 ## Examples
 
